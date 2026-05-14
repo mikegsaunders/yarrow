@@ -4,7 +4,7 @@
 
 # Yarrow
 
-A customised harness for [Pi](https://github.com/earendil-works/pi) — the terminal coding agent. Extra extensions, custom keybindings, and opinionated defaults.
+A customised harness for [Pi](https://github.com/earendil-works/pi). Extra extensions, custom keybindings, and opinionated defaults.
 
 **Pi is still the engine.** Yarrow just layers its files on top. When Pi updates, you get those updates automatically.
 
@@ -98,12 +98,6 @@ This removes Yarrow's symlinks from `~/.pi/agent/` and deletes the `yarrow` wrap
 
 ## Security
 
-This repo contains **no API keys**.
-
 - `auth.json` is ignored by `.gitignore` and never touched by the installer.
 - `models.json` is ignored. Only `models.json.example` is in the repo.
 - The install script refuses to overwrite a real (non-symlink) `settings.json` or `keybindings.json` — remove them manually first if you want Yarrow's versions.
-
-## License
-
-Extensions are MIT. Pi itself is a separate project — see the [Pi repo](https://github.com/earendil-works/pi).
