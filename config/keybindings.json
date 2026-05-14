@@ -1,0 +1,5 @@
+{
+  "tui.editor.cursorWordLeft": ["alt+left", "ctrl+left", "alt+b"],
+  "tui.editor.cursorWordRight": ["alt+right", "ctrl+right", "alt+f"],
+  "tui.editor.deleteWordBackward": ["ctrl+w", "alt+backspace", "ctrl+backspace"]
+}

@@ -1,0 +1,22 @@
+{
+  "lastChangelogVersion": "0.74.0",
+  "shellCommandPrefix": "shopt -s expand_aliases\neval \"$(grep '^alias ' ~/.zshrc)\"",
+  "defaultProvider": "openrouter",
+  "defaultModel": "moonshotai/kimi-k2.6",
+  "defaultThinkingLevel": "medium",
+  "doubleEscapeAction": "tree",
+  "treeFilterMode": "default",
+  "theme": "dark",
+  "skills": [
+    "~/.pi/agent/skills"
+  ],
+  "quietStartup": true,
+  "enabledModels": [
+    "opencode/minimax-m2.5-free",
+    "openrouter/anthropic/claude-opus-4.7",
+    "openrouter/anthropic/claude-sonnet-4.6",
+    "openrouter/moonshotai/kimi-k2.5",
+    "openrouter/moonshotai/kimi-k2.6"
+  ],
+  "hideThinkingBlock": false
+}

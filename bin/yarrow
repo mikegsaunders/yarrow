@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Yarrow — a pi harness
+# Simply delegates to pi, which loads our extensions from ~/.pi/agent/extensions/
+exec pi "$@"

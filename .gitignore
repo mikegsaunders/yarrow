@@ -1,0 +1,12 @@
+# Secrets
+config/models.json
+config/auth.json
+*.key
+*.pem
+.env
+
+# macOS
+.DS_Store
+
+# Node
+node_modules/

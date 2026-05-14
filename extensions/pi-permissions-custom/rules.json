@@ -1,0 +1,58 @@
+{
+  "mode": "default",
+  "catastrophicPatterns": [
+    { "pattern": "rm -rf /", "description": "recursive delete root" },
+    { "pattern": "rm -rf /*", "description": "recursive delete root wildcard" },
+    { "pattern": "sudo rm -rf /", "description": "sudo recursive delete root" },
+    { "pattern": "sudo rm -rf /*", "description": "sudo recursive delete root wildcard" },
+    { "pattern": "mkfs.", "description": "filesystem format" },
+    { "pattern": "dd if=", "description": "disk dd write" },
+    { "pattern": "sudo dd", "description": "sudo disk dd" },
+    { "pattern": ":(){ :|:& };:", "description": "fork bomb" },
+    { "pattern": "sudo chmod -R 777 /", "description": "chmod root" },
+    { "pattern": "sudo chown -R", "description": "chown recursive" },
+    { "pattern": "> /dev/sda", "description": "write to disk device" },
+    { "pattern": "> /dev/nvme", "description": "write to nvme device" }
+  ],
+  "dangerousPatterns": [
+    { "pattern": "rm -rf", "description": "recursive force delete" },
+    { "pattern": "sudo ", "description": "superuser command" },
+    { "pattern": "chmod 777", "description": "world-writable permissions" },
+    { "pattern": "chown -R", "description": "recursive ownership change" },
+    { "pattern": "mkfs", "description": "filesystem format" },
+    { "pattern": "fdisk", "description": "partition manipulation" },
+    { "pattern": "dd ", "description": "disk duplication/write" },
+    { "pattern": "| bash", "description": "pipe to bash" },
+    { "pattern": "| sh", "description": "pipe to sh" }
+  ],
+  "protectedPaths": [
+    "~/.ssh",
+    "~/.aws",
+    "~/.gnupg",
+    "~/.gpg",
+    "~/.bashrc",
+    "~/.bash_profile",
+    "~/.profile",
+    "~/.zshrc",
+    "~/.zprofile",
+    "~/.config/git/credentials",
+    "~/.netrc",
+    "~/.npmrc",
+    "~/.docker/config.json",
+    "~/.kube/config",
+    "~/.pi/agent/auth.json"
+  ],
+  "shellTrickPatterns": [
+    { "pattern": "$(", "description": "command substitution" },
+    { "pattern": "`", "description": "backtick command substitution" },
+    { "pattern": "<(", "description": "process substitution" },
+    { "pattern": ">(", "description": "process substitution" },
+    { "pattern": "eval ", "description": "eval execution" },
+    { "pattern": "exec ", "description": "exec replacement" },
+    { "pattern": "bash -c", "description": "bash invocation" },
+    { "pattern": "sh -c", "description": "sh invocation" },
+    { "pattern": "| bash", "description": "pipe to bash" },
+    { "pattern": "| sh", "description": "pipe to sh" },
+    { "pattern": "source ", "description": "source script" }
+  ]
+}
