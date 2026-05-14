@@ -4,7 +4,7 @@
 
 # Yarrow
 
-A customised harness for [Pi](https://github.com/earendil-works/pi). Extra extensions, custom keybindings, and opinionated defaults.
+A customised harness built on [Pi](https://github.com/earendil-works/pi). Extra extensions, custom keybindings, and opinionated defaults.
 
 **Pi is still the engine.** Yarrow just layers its files on top. When Pi updates, you get those updates automatically.
 
