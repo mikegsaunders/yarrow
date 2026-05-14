@@ -14,7 +14,7 @@ A customised harness for [Pi](https://github.com/earendil-works/pi) — the term
 curl -fsSL https://raw.githubusercontent.com/mikegsaunders/yarrow/main/install.sh | bash
 ```
 
-Then run `yarrow` (or keep using `pi`).
+Then run `yarrow`, `yo` (or keep using `pi`).
 
 ## What's included
 
@@ -43,7 +43,7 @@ cd ~/.yarrow
 The install script will:
 1. Install Pi if it's not already present (via `bun` or `npm`)
 2. Symlink Yarrow's extensions, skills, and config into `~/.pi/agent/`
-3. Add a `yarrow` wrapper to `~/.local/bin/`
+3. Add `yarrow` and `yo` wrappers to `~/.local/bin/`
 
 ## Custom providers
 

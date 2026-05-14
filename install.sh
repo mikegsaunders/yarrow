@@ -61,6 +61,7 @@ if $UNINSTALL; then
   rm -rf "$PI_AGENT_DIR/extensions/pi-permissions-custom"
   rm -rf "$PI_AGENT_DIR/skills/personal-wiki"
   rm -f "$HOME/.local/bin/yarrow"
+  rm -f "$HOME/.local/bin/yo"
 
   for f in settings.json keybindings.json; do
     target="$PI_AGENT_DIR/$f"
@@ -234,6 +235,16 @@ fi
 chmod +x "$LOCAL_BIN/yarrow"
 info "Installed yarrow wrapper → $LOCAL_BIN/yarrow"
 
+# ─── yo alias ─────────────────────────────────────────────────────────────────
+
+rm -f "$LOCAL_BIN/yo"
+if $COPY; then
+  cp -f "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
+else
+  ln -s "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
+fi
+info "Installed yo alias → $LOCAL_BIN/yo"
+
 if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
   warn "$LOCAL_BIN is not on your PATH.\n" \
        "      Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n" \
@@ -243,5 +254,5 @@ fi
 # ─── Done ─────────────────────────────────────────────────────────────────────
 
 echo
-info "Yarrow installed. Run 'yarrow' (or 'pi') to start."
+info "Yarrow installed. Run 'yarrow', 'yo' (or 'pi') to start."
 info "Repo is at $REPO_DIR — cd there and git pull to update."
