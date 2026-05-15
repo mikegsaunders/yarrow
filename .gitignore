@@ -12,4 +12,4 @@ config/auth.json
 node_modules/
 
 # misc
-render_yarrow.py
+extensions/render_yarrow.py
