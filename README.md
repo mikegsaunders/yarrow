@@ -14,16 +14,17 @@ A customised harness built on [Pi](https://github.com/earendil-works/pi). Extra 
 curl -fsSL https://raw.githubusercontent.com/mikegsaunders/yarrow/main/install.sh | bash
 ```
 
-Then run `yarrow`, `yo` (or keep using `pi`).
+Then run `yarrow` or `yo`.
 
 ## What's included
 
 | Extension | What it does |
 |-----------|-------------|
-| `yarrow.ts` | Custom ASCII-art header + `/yarrow` command to toggle it |
-| `openrouter-credits.ts` | Footer showing OpenRouter credit balance + session token stats |
-| `web-search` | Multi-provider web search tool (`Exa → Brave → OpenRouter` fallback chain) |
 | `pi-permissions-custom` | Claude Code-style permission modes (`default` / `acceptEdits` / `fullAuto` / `bypassPermissions`) |
+| `web-search` | Multi-provider web search tool (`Exa → Brave → OpenRouter` fallback chain) |
+| `openrouter-credits.ts` | Footer showing OpenRouter credit balance + session token stats |
+| `yarrow.ts` | Custom ASCII-art header + `/yarrow` command to toggle it |
+
 
 **Config**
 - Dark theme, quiet startup, custom keybindings
