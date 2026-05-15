@@ -1,13 +1,13 @@
 {
   "providers": {
-    "nvidia-build": {
-      "baseUrl": "https://integrate.api.nvidia.com/v1",
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
       "api": "openai-completions",
-      "apiKey": "YOUR_API_KEY_HERE",
+      "apiKey": "YOUR_OPENROUTER_API_KEY",
       "models": [
         {
-          "id": "minimaxai/minimax-m2.7",
-          "contextWindow": 128000,
+          "id": "moonshotai/kimi-k2.6",
+          "contextWindow": 256000,
           "maxTokens": 8192
         }
       ]

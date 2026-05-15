@@ -48,7 +48,7 @@ The install script will:
 
 ## Custom providers
 
-If you need custom providers (e.g. NVIDIA build), copy the example and add your key:
+If you need to configure custom providers or add your own OpenRouter key, copy the example and edit it:
 
 ```bash
 cp ~/.yarrow/config/models.json.example ~/.pi/agent/models.json

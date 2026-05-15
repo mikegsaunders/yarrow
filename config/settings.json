@@ -12,7 +12,6 @@
   ],
   "quietStartup": true,
   "enabledModels": [
-    "opencode/minimax-m2.5-free",
     "openrouter/anthropic/claude-opus-4.7",
     "openrouter/anthropic/claude-sonnet-4.6",
     "openrouter/moonshotai/kimi-k2.5",
