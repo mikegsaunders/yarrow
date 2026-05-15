@@ -10,3 +10,6 @@ config/auth.json
 
 # Node
 node_modules/
+
+# misc
+render_yarrow.py
