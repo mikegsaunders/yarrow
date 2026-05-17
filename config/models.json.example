@@ -4,11 +4,16 @@
       "baseUrl": "https://openrouter.ai/api/v1",
       "api": "openai-completions",
       "apiKey": "YOUR_OPENROUTER_API_KEY",
+      "compat": {
+        "thinkingFormat": "openrouter",
+        "supportsReasoningEffort": true
+      },
       "models": [
         {
           "id": "moonshotai/kimi-k2.6",
-          "contextWindow": 256000,
-          "maxTokens": 8192
+          "contextWindow": 262144,
+          "maxTokens": 16384,
+          "reasoning": true
         }
       ]
     }
