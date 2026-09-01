@@ -1,0 +1,83 @@
+{
+  "classifier": {
+    "provider": "openrouter",
+    "model": "@preset/flash",
+    "blocksBeforeAsking": 2
+  },
+
+  "catastrophicPatterns": [
+    {
+      "pattern": "(^|[;&|] *)(sudo +)?rm +-[a-zA-Z]*[rf][a-zA-Z]* +/\\*? *($|[;&|])",
+      "match": "regex",
+      "description": "recursive delete of /"
+    },
+    { "pattern": "mkfs.", "description": "filesystem format" },
+    { "pattern": "dd if=", "description": "raw disk write" },
+    { "pattern": ":(){ :|:& };:", "description": "fork bomb" },
+    { "pattern": "chmod -R 777 /", "description": "world-writable root" },
+    { "pattern": "> /dev/sd", "description": "write to disk device" },
+    { "pattern": "> /dev/nvme", "description": "write to nvme device" }
+  ],
+
+  "dangerousPatterns": [
+    { "pattern": "rm -rf", "description": "recursive force delete" },
+    { "pattern": "rm -fr", "description": "recursive force delete" },
+    { "pattern": "sudo", "description": "superuser command" },
+    { "pattern": "chmod 777", "description": "world-writable permissions" },
+    { "pattern": "chown -R", "description": "recursive ownership change" },
+    { "pattern": "mkfs", "description": "filesystem format" },
+    { "pattern": "fdisk", "description": "partition manipulation" },
+    { "pattern": "dd", "description": "disk duplication/write" },
+    { "pattern": "git push --force", "description": "force push" },
+    { "pattern": "git push -f", "description": "force push" },
+    { "pattern": "git reset --hard", "description": "discards uncommitted work" },
+    { "pattern": "git checkout -- .", "description": "discards uncommitted work" },
+    { "pattern": "git restore .", "description": "discards uncommitted work" },
+    { "pattern": "git clean -fd", "description": "deletes untracked files" },
+    { "pattern": "git stash drop", "description": "discards a stash" },
+    { "pattern": "git stash clear", "description": "discards every stash" }
+  ],
+
+  "autoApprovedCommands": [
+    "ls", "pwd", "cd", "echo", "cat", "head", "tail", "wc", "file", "stat", "tree",
+    "find", "grep", "rg", "fd", "diff", "sort", "uniq", "which", "date", "basename",
+    "dirname", "realpath", "mkdir", "touch", "mv", "cp"
+  ],
+
+  "shellTrickPatterns": [
+    {
+      "pattern": "\\|\\s*(sudo\\s+)?(ba|z|k|fi)?sh\\b",
+      "match": "regex",
+      "description": "pipe into a shell"
+    },
+    { "pattern": "eval", "description": "eval hides the real command" },
+    { "pattern": "bash -c", "description": "nested shell invocation" },
+    { "pattern": "sh -c", "description": "nested shell invocation" },
+    { "pattern": "zsh -c", "description": "nested shell invocation" },
+    { "pattern": "source", "description": "sources an external script" },
+    { "pattern": "base64 -d", "description": "decodes an obfuscated payload" }
+  ],
+
+  "protectedPaths": [
+    "~/.bashrc",
+    "~/.bash_profile",
+    "~/.profile",
+    "~/.zshrc",
+    "~/.zprofile",
+    "~/.gitconfig",
+    "~/.pi/agent/settings.json"
+  ],
+
+  "secretPaths": [
+    "~/.ssh",
+    "~/.aws",
+    "~/.gnupg",
+    "~/.gpg",
+    "~/.netrc",
+    "~/.npmrc",
+    "~/.config/git/credentials",
+    "~/.docker/config.json",
+    "~/.kube/config",
+    "~/.pi/agent/auth.json"
+  ]
+}
