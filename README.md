@@ -4,101 +4,58 @@
 
 # Yarrow
 
-A customised harness built on [Pi](https://github.com/earendil-works/pi). Extra extensions, custom keybindings, and opinionated defaults.
+An opinionated harness for [Pi](https://github.com/earendil-works/pi). Pi is still the engine — Yarrow is a package layered on top, so pi keeps updating itself underneath you.
 
-**Pi is still the engine.** Yarrow just layers its files on top. When Pi updates, you get those updates automatically.
-
-## Quick install
+## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mikegsaunders/yarrow/main/install.sh | bash
 ```
 
-Then run `yarrow` or `yo`.
+Installs pi if you don't have it. If you already have pi and want the extensions without the config opinions: `pi install npm:@mikegsaunders/yarrow`.
 
-## What's included
-
-| Extension | What it does |
-|-----------|-------------|
-| `pi-permissions-custom` | Claude Code-style permission modes (`default` / `acceptEdits` / `fullAuto` / `bypassPermissions`) |
-| `web-search` | Multi-provider web search tool (`Exa → Brave → OpenRouter` fallback chain) |
-| `openrouter-credits.ts` | Footer showing OpenRouter credit balance + session token stats |
-| `yarrow.ts` | Custom ASCII-art header + `/yarrow` command to toggle it |
-
-
-**Config**
-- Dark theme, quiet startup, custom keybindings
-- Default provider: OpenRouter, default model: `moonshotai/kimi-k2.6`
-- Personal wiki skill loaded from `~/.pi/agent/skills`
-
-## Manual install
-
-If you prefer to clone first:
+## Use
 
 ```bash
-git clone https://github.com/mikegsaunders/yarrow.git ~/.yarrow
-cd ~/.yarrow
-./install.sh
+yarrow                                    # the TUI
+yo remind me of the command for nginx     # one-shot answer, in the terminal
 ```
 
-The install script will:
-1. Install Pi if it's not already present (via `bun` or `npm`)
-2. Symlink Yarrow's extensions, skills, and config into `~/.pi/agent/`
-3. Add `yarrow` and `yo` wrappers to `~/.local/bin/`
+One-shots go to a fast model (`openrouter/@preset/flash`, or set `YARROW_QUICK_MODEL`). Nothing that would need your approval runs unattended. `pi` on its own works too — the package is global. `pi -ne` skips it.
 
-## Custom providers
+> zsh eats `?`, so either quote the question or `alias yo='noglob yo'`.
 
-If you need to configure custom providers or add your own OpenRouter key, copy the example and edit it:
+## What you get
 
-```bash
-cp ~/.yarrow/config/models.json.example ~/.pi/agent/models.json
-# edit ~/.pi/agent/models.json
-```
+| | |
+|---|---|
+| **Permissions** | No modes to pick. Catastrophic commands and secret paths are denied outright; destructive ones ask you; reads, everyday commands and edits in your working directory just run; everything else is judged by a fast model, which blocks with a reason the agent can work around. [Details](extensions/permissions/AGENTS.md) |
+| **Web search** | `web_search` tool, Exa → Brave → OpenRouter, staying inside the free tiers. `/search-stats` |
+| **Footer** | OpenRouter balance and session spend |
+| **Header** | The dog. `/yarrow` toggles him |
+| **Personal wiki** | Skill for a knowledge base at `~/wiki` |
 
-`models.json` and `auth.json` are **never touched** by the install script and are ignored by git.
+> The last tier means a background model call: calls that reach it are sent to `@preset/flash` — the command, your last message, and your git remote URLs — costing a fraction of a cent and a few seconds. Reads, everyday commands, and edits in your working directory never reach it.
 
-## Updating
+Defaults: OpenRouter, `kimi-k2.6`, medium thinking, quiet startup. Yarrow **merges** these into `settings.json` and leaves anything you have already set — pi owns that file, so your changes always win. `--force-config` overrides that.
 
-### Updating Pi
-
-Pi updates itself (or via your package manager). Yarrow doesn't interfere.
-
-### Updating Yarrow
+## Update, uninstall
 
 ```bash
-cd ~/.yarrow
-git pull
-./install.sh
-```
-
-## Uninstall
-
-```bash
+pi update --extensions          # or: cd ~/.yarrow && git pull
 ~/.yarrow/install.sh --uninstall
 ```
 
-This removes Yarrow's symlinks from `~/.pi/agent/` and deletes the `yarrow` wrapper. The repo at `~/.yarrow` is left intact in case you want it back.
+## Hacking on it
 
-## Commands added
+```bash
+git clone https://github.com/mikegsaunders/yarrow.git ~/.yarrow && ~/.yarrow/install.sh
+```
 
-| Command | Description |
-|---------|-------------|
-| `/yarrow` | Toggle the Yarrow header |
-| `/builtin-header` | Restore Pi's default header |
-| `/search-stats` | Show web-search quota usage |
-| `/permissions` | Interactive permission mode selector |
-| `/permissions <mode>` | Set mode directly |
-| `/permissions:status` | Show current mode & approvals |
-| `/permissions:reload` | Reload `rules.json` |
+Installed from a checkout, pi loads the extensions out of your working copy — edit, restart, done.
 
-## Shortcuts
+```bash
+npm install && npm run typecheck && bun test
+```
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Shift+P` | Cycle permission modes |
-
-## Security
-
-- `auth.json` is ignored by `.gitignore` and never touched by the installer.
-- `models.json` is ignored. Only `models.json.example` is in the repo.
-- The install script refuses to overwrite a real (non-symlink) `settings.json` or `keybindings.json` — remove them manually first if you want Yarrow's versions.
+Extensions are typechecked against the pi version in `devDependencies`, so API drift shows up in CI rather than at someone's next startup.
