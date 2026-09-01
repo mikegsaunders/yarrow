@@ -41,7 +41,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "eval:classifier": "bun extensions/permissions/classifier.eval.ts",
-    "prepublishOnly": "npm run typecheck && bun test"
+    "prepublishOnly": "npm install --no-audit --no-fund && npm run typecheck && bun test"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
