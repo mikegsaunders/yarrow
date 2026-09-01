@@ -1,6 +1,6 @@
 ---
 name: personal-wiki
-description: Access and update my personal knowledge wiki at ~/wiki. Contains my standing preferences, tech stack defaults (Bun + Hono + Oat), project conventions, and accumulated knowledge. Use when the user mentions wiki, docs, preferences, my stack, how I build apps, or when starting any new web app, project, or coding task where defaults should apply. Also use for ingesting notes, updating knowledge, or long-term memory storage.
+description: The user's personal wiki at ~/wiki - their standing preferences, tech stack defaults (Bun + Hono + Oat), project conventions, and notes they have saved there. Use it only when the user names the wiki or their own notes ("check my wiki", "add this to my notes", "what did I decide about X"), asks what their preferences or defaults are, or is about to scaffold a new project those defaults would shape. Do not use it for general questions, for looking up documentation, or for anything answerable without their personal notes - a question that merely starts with "remind me" is usually just a question.
 ---
 
 # Personal Wiki
@@ -25,11 +25,20 @@ The wiki is just markdown files in `~/wiki` (a git repo). It is browsable in any
 
 ## When to Use This Skill
 
-- User says "update my wiki", "update my docs", "check the wiki", "reference my docs"
-- User mentions project preferences ("my stack", "how I like apps built")
-- User wants to ingest a document, article, idea, or decision into the knowledge base
-- User asks something that requires long-term memory ("what did I decide about X?")
-- Before starting a new project, check `preferences.md` for relevant defaults
+- The user names the wiki or their notes: "update my wiki", "check the wiki", "add this to my notes"
+- The user asks about their own preferences or defaults: "my stack", "how I like apps built"
+- The user wants a document, article, idea, or decision ingested into the knowledge base
+- The user asks about a decision they recorded: "what did I decide about X?"
+- Before scaffolding a new project, to pick up `preferences.md` defaults
+
+## When Not To Use It
+
+The wiki answers questions about *the user*, not questions in general. Skip it for:
+
+- Factual or technical questions with an answer that does not depend on their notes
+  ("remind me of the command for checking nginx" is a question about nginx)
+- Documentation lookups for a library, tool, or API
+- Anything in the current repository, which the working directory already answers
 
 ## On-Demand Loading Model
 
