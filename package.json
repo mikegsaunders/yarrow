@@ -1,0 +1,58 @@
+{
+  "name": "@mikegsaunders/yarrow",
+  "version": "0.5.0",
+  "description": "An opinionated harness for the Pi coding agent: permission modes, web search, OpenRouter credits, and a custom header.",
+  "license": "MIT",
+  "author": "mikegsaunders",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikegsaunders/yarrow.git"
+  },
+  "keywords": [
+    "pi-package"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "files": [
+    "extensions",
+    "!extensions/**/*.test.ts",
+    "!extensions/**/*.eval.ts",
+    "skills",
+    "config",
+    "scripts",
+    "README.md"
+  ],
+  "bin": {
+    "yarrow-config": "scripts/apply-config.mjs"
+  },
+  "pi": {
+    "extensions": [
+      "extensions/*.ts",
+      "extensions/*/index.ts"
+    ],
+    "skills": [
+      "skills"
+    ],
+    "image": "https://raw.githubusercontent.com/mikegsaunders/yarrow/main/yarrow.png"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "eval:classifier": "bun extensions/permissions/classifier.eval.ts",
+    "prepublishOnly": "npm run typecheck && bun test"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.80.10",
+    "@types/bun": "^1.4.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

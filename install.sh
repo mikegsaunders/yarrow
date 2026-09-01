@@ -1,16 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ─── Config ───────────────────────────────────────────────────────────────────
+# ─── Config ──────────────────────────────────────────────────────────────
 
-YARROW_REPO_URL="${YARROW_REPO_URL:-https://github.com/mikegsaunders/yarrow.git}"
-YARROW_DIR="${YARROW_DIR:-$HOME/.yarrow}"
-PI_AGENT_DIR="$HOME/.pi/agent"
+YARROW_PACKAGE="${YARROW_PACKAGE:-npm:@mikegsaunders/yarrow}"
+PI_AGENT_DIR="${PI_AGENT_DIR:-$HOME/.pi/agent}"
 
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[1;33m'
-blue='\033[0;34m'
 nc='\033[0m'
 
 info()  { echo -e "${green}[yarrow]${nc} $*"; }
@@ -22,71 +20,110 @@ usage() {
   cat <<EOF
 Usage: ${0##*/} [OPTIONS]
 
-Bootstrap Yarrow on top of Pi.
+Install Yarrow as a pi package and merge its config defaults into pi.
+
+Run from a checkout, Yarrow is registered from that directory so a git pull updates
+it. Run any other way (curl | bash), it is installed from npm.
 
 Options:
-  --copy          Copy files instead of symlinking
-  --uninstall     Remove Yarrow from ~/.pi/agent/ and ~/.local/bin/yarrow
+  --force-config  Overwrite settings you have already customised
+  --uninstall     Remove the Yarrow package and its wrappers
   -h, --help      Show this help
 
 Environment:
-  YARROW_REPO_URL   Git URL to clone (default: $YARROW_REPO_URL)
-  YARROW_DIR        Where to clone (default: $YARROW_DIR)
+  YARROW_PACKAGE  Package source when not run from a checkout
+                  (default: $YARROW_PACKAGE)
 EOF
   exit 0
 }
 
-# ─── Arg parse ────────────────────────────────────────────────────────────────
+# ─── Where are we running from? ─────────────────────────────────────────────
 
-COPY=false
+# Piped through bash (curl | bash), BASH_SOURCE[0] is unset or "-", so there is no
+# checkout to install from and we fall back to the published package.
+CHECKOUT_DIR=""
+if [[ "${BASH_SOURCE[0]:--}" != "-" ]] && [[ -f "${BASH_SOURCE[0]}" ]]; then
+  candidate="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  [[ -f "$candidate/package.json" ]] && CHECKOUT_DIR="$candidate"
+fi
+
+# ─── Arg parse ─────────────────────────────────────────────────────────
+
+FORCE_CONFIG=false
 UNINSTALL=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --copy) COPY=true; shift ;;
+    --force-config) FORCE_CONFIG=true; shift ;;
     --uninstall) UNINSTALL=true; shift ;;
     -h|--help) usage ;;
     *) die "Unknown option: $1" ;;
   esac
 done
 
-# ─── Uninstall ────────────────────────────────────────────────────────────────
+# ─── Legacy layout ──────────────────────────────────────────────────────
 
-if $UNINSTALL; then
-  info "Uninstalling Yarrow ..."
+# Yarrow used to symlink itself into ~/.pi/agent. Those symlinks would now load a
+# second copy of every extension alongside the package, so clear them out.
+remove_legacy_links() {
+  local removed=false path real
+  for path in \
+    "$PI_AGENT_DIR/extensions/yarrow.ts" \
+    "$PI_AGENT_DIR/extensions/openrouter-credits.ts" \
+    "$PI_AGENT_DIR/extensions/web-search" \
+    "$PI_AGENT_DIR/extensions/pi-permissions-custom" \
+    "$PI_AGENT_DIR/extensions/permissions" \
+    "$PI_AGENT_DIR/skills/personal-wiki"
+  do
+    if [[ -L "$path" ]]; then
+      rm -f "$path"
+      removed=true
+    fi
+  done
 
-  rm -f "$PI_AGENT_DIR/extensions/yarrow.ts"
-  rm -f "$PI_AGENT_DIR/extensions/openrouter-credits.ts"
-  rm -rf "$PI_AGENT_DIR/extensions/web-search"
-  rm -rf "$PI_AGENT_DIR/extensions/pi-permissions-custom"
-  rm -rf "$PI_AGENT_DIR/skills/personal-wiki"
-  rm -f "$HOME/.local/bin/yarrow"
-  rm -f "$HOME/.local/bin/yo"
-
-  for f in settings.json keybindings.json; do
-    target="$PI_AGENT_DIR/$f"
-    if [[ -L "$target" ]]; then
-      real=$(readlink -f "$target" 2>/dev/null || true)
-      if [[ "$real" == "$YARROW_DIR"/* ]]; then
-        rm -f "$target"
-        info "Removed symlink $f"
+  # Config files symlinked into the repo become real files holding the same content,
+  # so pi can write to them without dirtying the checkout.
+  for path in "$PI_AGENT_DIR/settings.json" "$PI_AGENT_DIR/keybindings.json"; do
+    if [[ -L "$path" ]]; then
+      real=$(readlink -f "$path" 2>/dev/null || true)
+      if [[ -f "$real" ]]; then
+        rm -f "$path"
+        cp "$real" "$path"
+        info "Converted $(basename "$path") from a symlink into a real file"
+        removed=true
       fi
     fi
   done
 
-  info "Uninstall complete. Pi is back to stock."
-  info "Yarrow repo still at $YARROW_DIR — remove manually if desired."
+  $removed && info "Removed symlinks from the old install layout"
+  return 0
+}
+
+# ─── Uninstall ────────────────────────────────────────────────────────
+
+if $UNINSTALL; then
+  info "Uninstalling Yarrow ..."
+
+  remove_legacy_links
+
+  if command -v pi &>/dev/null; then
+    for source in "$YARROW_PACKAGE" "$CHECKOUT_DIR"; do
+      [[ -n "$source" ]] || continue
+      if pi remove "$source" &>/dev/null; then
+        info "Removed package $source"
+      fi
+    done
+  else
+    warn "pi not found — remove the Yarrow entry from $PI_AGENT_DIR/settings.json by hand"
+  fi
+
+  rm -f "$HOME/.local/bin/yarrow" "$HOME/.local/bin/yo"
+
+  info "Uninstall complete."
+  warn "Config keys Yarrow merged into settings.json are left in place — they are yours now."
   exit 0
 fi
 
-# ─── Remote bootstrap (when piped via curl) ───────────────────────────────────
-
-# Detect if we're running from a local file or via curl | bash.
-# When local, BASH_SOURCE[0] is the real path. When piped, it's "-" or empty.
-REPO_DIR=""
-if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ "${BASH_SOURCE[0]}" != "-" ]] && [[ -f "${BASH_SOURCE[0]}" ]]; then
-  REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
 
 install_pi() {
   if command -v pi &>/dev/null; then
@@ -109,9 +146,11 @@ install_pi() {
   fi
 
   # Ensure pi is on PATH for this session
+  local bin_dir
   for p in "$HOME/.bun/bin/pi" "$HOME/.local/bin/pi" "$HOME/.npm-global/bin/pi"; do
     if [[ -x "$p" ]]; then
-      export PATH="$(dirname "$p"):$PATH"
+      bin_dir="$(dirname "$p")"
+      export PATH="$bin_dir:$PATH"
       break
     fi
   done
@@ -124,126 +163,97 @@ install_pi() {
   info "Pi installed: $(command -v pi)"
 }
 
-bootstrap_repo() {
-  if [[ -d "$YARROW_DIR/.git" ]]; then
-    info "Yarrow repo already at $YARROW_DIR"
-    info "Pulling latest ..."
-    git -C "$YARROW_DIR" pull --ff-only
-  else
-    if ! command -v git &>/dev/null; then
-      die "git is required but not installed."
-    fi
-    info "Cloning Yarrow ..."
-    git clone "$YARROW_REPO_URL" "$YARROW_DIR"
-  fi
-}
+# ─── Install ─────────────────────────────────────────────────────────────
 
-if [[ -z "$REPO_DIR" ]] || [[ ! -f "$REPO_DIR/extensions/yarrow.ts" ]]; then
-  info "Yarrow remote installer"
-  echo
+install_pi
+remove_legacy_links
 
-  install_pi
-  bootstrap_repo
-
-  info "Running local install from $YARROW_DIR ..."
-  echo
-  exec bash "$YARROW_DIR/install.sh" "$([[ "$COPY" == true ]] && echo --copy)"
-fi
-
-# ─── Local install (run from within the repo) ─────────────────────────────────
-
-if [[ ! -f "$REPO_DIR/extensions/yarrow.ts" ]]; then
-  die "This doesn't look like the Yarrow repo (missing extensions/yarrow.ts).\n" \
-      "Run via curl:\n" \
-      "  curl -fsSL ${YARROW_REPO_URL%.git}/raw/main/install.sh | bash"
-fi
-
-info "Installing Yarrow from $REPO_DIR ..."
-
-if [[ ! -d "$PI_AGENT_DIR" ]]; then
-  die "Pi agent directory not found: $PI_AGENT_DIR\n" \
-      "Install Pi first, or run this script via curl to auto-install Pi."
-fi
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
-link_or_copy() {
-  local src="$1" dst="$2"
-  if $COPY; then
-    rm -rf "$dst"
-    if [[ -d "$src" ]]; then
-      cp -R "$src" "$dst"
-    else
-      cp -f "$src" "$dst"
-    fi
-    info "Copied $(basename "$src")"
-  else
-    rm -rf "$dst"
-    ln -s "$src" "$dst"
-    info "Linked $(basename "$src")"
-  fi
-}
-
-# ─── Extensions ───────────────────────────────────────────────────────────────
-
-link_or_copy "$REPO_DIR/extensions/yarrow.ts"              "$PI_AGENT_DIR/extensions/yarrow.ts"
-link_or_copy "$REPO_DIR/extensions/openrouter-credits.ts"  "$PI_AGENT_DIR/extensions/openrouter-credits.ts"
-link_or_copy "$REPO_DIR/extensions/web-search"             "$PI_AGENT_DIR/extensions/web-search"
-link_or_copy "$REPO_DIR/extensions/pi-permissions-custom"  "$PI_AGENT_DIR/extensions/pi-permissions-custom"
-
-# ─── Skills ───────────────────────────────────────────────────────────────────
-
-link_or_copy "$REPO_DIR/skills/personal-wiki"              "$PI_AGENT_DIR/skills/personal-wiki"
-
-# ─── Config ───────────────────────────────────────────────────────────────────
-
-for f in settings.json keybindings.json; do
-  dst="$PI_AGENT_DIR/$f"
-  if [[ -e "$dst" && ! -L "$dst" ]]; then
-    warn "$f already exists as a real file. Skipping.\n" \
-         "      Remove it manually if you want Yarrow's version: rm $dst"
-  else
-    link_or_copy "$REPO_DIR/config/$f" "$dst"
-  fi
-done
-
-# ─── models.json ──────────────────────────────────────────────────────────────
-
-if [[ ! -f "$PI_AGENT_DIR/models.json" ]]; then
-  if [[ -f "$REPO_DIR/config/models.json" ]]; then
-    warn "No models.json found in Pi. Copying from repo (CHECK FOR API KEYS!)."
-    cp "$REPO_DIR/config/models.json" "$PI_AGENT_DIR/models.json"
-  else
-    warn "No models.json found. If you need custom providers:"
-    warn "  cp $REPO_DIR/config/models.json.example $PI_AGENT_DIR/models.json"
-  fi
+if [[ -n "$CHECKOUT_DIR" ]]; then
+  # Run from a checkout: pi loads the extensions and skills straight out of it, so a
+  # git pull is all it takes to update.
+  info "Registering Yarrow from $CHECKOUT_DIR ..."
+  pi install "$CHECKOUT_DIR"
 else
-  info "models.json already exists — left untouched."
+  info "Installing Yarrow from $YARROW_PACKAGE ..."
+  pi install "$YARROW_PACKAGE" || die \
+    "Could not install $YARROW_PACKAGE.\n" \
+    "      If it is not published yet, install from a clone instead:\n" \
+    "        git clone https://github.com/mikegsaunders/yarrow.git ~/.yarrow\n" \
+    "        ~/.yarrow/install.sh"
 fi
 
-# ─── yarrow wrapper binary ────────────────────────────────────────────────────
+# ─── Config ────────────────────────────────────────────────────────────
 
+# The config merge ships with the package as the `yarrow-config` bin, so an npm
+# install can run it without this script knowing where pi keeps its packages.
+config_args=()
+$FORCE_CONFIG && config_args+=(--force)
+
+if [[ -n "$CHECKOUT_DIR" ]]; then
+  if command -v node &>/dev/null; then
+    node "$CHECKOUT_DIR/scripts/apply-config.mjs" "${config_args[@]}"
+  elif command -v bun &>/dev/null; then
+    bun "$CHECKOUT_DIR/scripts/apply-config.mjs" "${config_args[@]}"
+  else
+    warn "Neither node nor bun found — skipping config merge."
+  fi
+elif command -v npx &>/dev/null; then
+  # -p names the package and `yarrow-config` the bin inside it; the two differ.
+  npx -y -p "${YARROW_PACKAGE#npm:}" yarrow-config "${config_args[@]}"
+elif command -v bunx &>/dev/null; then
+  bunx --package "${YARROW_PACKAGE#npm:}" yarrow-config "${config_args[@]}"
+else
+  warn "Neither npx nor bunx found — skipping config merge."
+fi
+
+
+# ─── models.json ───────────────────────────────────────────────────────
+
+if [[ -f "$PI_AGENT_DIR/models.json" ]]; then
+  info "models.json already exists — left untouched."
+else
+  warn "No models.json found. If you need custom providers, start from:"
+  warn "  https://github.com/mikegsaunders/yarrow/blob/main/config/models.json.example"
+fi
+
+# ─── yarrow / yo wrappers ─────────────────────────────────────────────────
+
+# Convenience names, not a separate runtime: the package is registered globally, so
+# plain `pi` gets Yarrow too. Generated here so the npm install has them as well.
 LOCAL_BIN="$HOME/.local/bin"
 mkdir -p "$LOCAL_BIN"
 
-if $COPY; then
-  cp -f "$REPO_DIR/bin/yarrow" "$LOCAL_BIN/yarrow"
-else
-  rm -f "$LOCAL_BIN/yarrow"
-  ln -s "$REPO_DIR/bin/yarrow" "$LOCAL_BIN/yarrow"
-fi
-chmod +x "$LOCAL_BIN/yarrow"
-info "Installed yarrow wrapper → $LOCAL_BIN/yarrow"
-
-# ─── yo alias ─────────────────────────────────────────────────────────────────
+rm -f "$LOCAL_BIN/yarrow"
+cat > "$LOCAL_BIN/yarrow" <<'WRAPPER'
+#!/usr/bin/env bash
+# yarrow — open the harness.
+#
+# A convenience name, not a separate runtime: Yarrow is registered as a global pi
+# package, so `pi` behaves identically. Use `pi -ne` for a session without it.
+exec pi "$@"
+WRAPPER
 
 rm -f "$LOCAL_BIN/yo"
-if $COPY; then
-  cp -f "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
-else
-  ln -s "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
-fi
-info "Installed yo alias → $LOCAL_BIN/yo"
+cat > "$LOCAL_BIN/yo" <<'WRAPPER'
+#!/usr/bin/env bash
+# yo — Yarrow, in one line.
+#
+#   yo                        open the harness
+#   yo how do I check nginx   answer in the terminal and exit
+#
+# One-liners go to a fast model. They run non-interactively, so anything that would
+# need your approval is refused rather than queued; the safety classifier still
+# decides the rest. Override the model with YARROW_QUICK_MODEL.
+
+case "${1:-}" in
+  "" | -*) exec pi "$@" ;;
+esac
+
+exec pi --print --model "${YARROW_QUICK_MODEL:-openrouter/@preset/flash}" "$@"
+WRAPPER
+
+chmod +x "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
+info "Installed yarrow and yo wrappers → $LOCAL_BIN"
 
 if [[ ":$PATH:" != *":$LOCAL_BIN:"* ]]; then
   warn "$LOCAL_BIN is not on your PATH.\n" \
@@ -255,4 +265,8 @@ fi
 
 echo
 info "Yarrow installed. Run 'yarrow', 'yo' (or 'pi') to start."
-info "Repo is at $REPO_DIR — cd there and git pull to update."
+if [[ -n "$CHECKOUT_DIR" ]]; then
+  info "Loaded from $CHECKOUT_DIR — git pull there to update."
+else
+  info "Update with: pi update --extensions"
+fi

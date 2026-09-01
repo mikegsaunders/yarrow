@@ -14,6 +14,13 @@
           "contextWindow": 262144,
           "maxTokens": 16384,
           "reasoning": true
+        },
+        {
+          "id": "@preset/flash",
+          "name": "flash",
+          "contextWindow": 262144,
+          "maxTokens": 16384,
+          "reasoning": true
         }
       ]
     }

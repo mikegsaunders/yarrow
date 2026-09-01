@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Yarrow's extensions are typechecked against the pi version in devDependencies,
+      # so pi API drift shows up here rather than at someone's next startup.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: bun test
+
+      - name: Shell check
+        run: |
+          bash -n install.sh
+          shellcheck install.sh
+
+      - name: Config merge is runnable
+        run: PI_AGENT_DIR="$RUNNER_TEMP/agent" node scripts/apply-config.mjs --dry-run

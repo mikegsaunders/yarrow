@@ -13,3 +13,6 @@ node_modules/
 
 # misc
 extensions/render_yarrow.py
+
+# npm pack output
+*.tgz
