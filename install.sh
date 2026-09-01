@@ -249,7 +249,19 @@ case "${1:-}" in
   "" | -*) exec pi "$@" ;;
 esac
 
-exec pi --print --model "${YARROW_QUICK_MODEL:-openrouter/@preset/flash}" "$@"
+# pi treats every positional argument as a separate message and runs a turn for
+# each, so the question has to arrive as one. @file arguments are the exception:
+# those it resolves individually, and only before the message.
+files=()
+words=()
+for arg in "$@"; do
+  case "$arg" in
+    @*) files+=("$arg") ;;
+    *) words+=("$arg") ;;
+  esac
+done
+
+exec pi --print --model "${YARROW_QUICK_MODEL:-openrouter/@preset/flash}" "${files[@]}" "${words[*]}"
 WRAPPER
 
 chmod +x "$LOCAL_BIN/yarrow" "$LOCAL_BIN/yo"
