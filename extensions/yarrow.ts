@@ -71,53 +71,42 @@ function getArtLines(): string[] {
   return lines;
 }
 
+const header = () => ({
+  render(width: number): string[] {
+    const art = getArtLines();
+    const name = bold(`${fg(224, 224, 224)}yarrow`);
+    const version = dim(`${fg(128, 128, 128)}pi v${VERSION}`);
+    const tagline = dim(`${fg(128, 128, 128)}a pi-based coding harness`);
+    const textLines = [`${name}  ${version}`, tagline];
+
+    const rightAlign = (line: string): string => {
+      const vw = visualWidth(line);
+      const pad = Math.max(0, width - vw);
+      return " ".repeat(pad) + line;
+    };
+
+    return ["", ...art.map(rightAlign), "", ...textLines.map(rightAlign), ""];
+  },
+  invalidate() {},
+});
+
 export default function (pi: ExtensionAPI) {
   let enabled = true;
 
   pi.on("session_start", async (_event, ctx) => {
     if (!ctx.hasUI || !enabled) return;
-
-    ctx.ui.setHeader((_tui, _theme) => {
-      return {
-        render(width: number): string[] {
-          const art = getArtLines();
-          const name = bold(`${fg(224, 224, 224)}yarrow`);
-          const version = dim(`${fg(128, 128, 128)}pi v${VERSION}`);
-          const tagline = dim(`${fg(128, 128, 128)}a pi-based coding harness`);
-          const textLines = [`${name}  ${version}`, tagline];
-
-          const rightAlign = (line: string): string => {
-            const vw = visualWidth(line);
-            const pad = Math.max(0, width - vw);
-            return " ".repeat(pad) + line;
-          };
-
-          return ["", ...art.map(rightAlign), "", ...textLines.map(rightAlign), ""];
-        },
-        invalidate() {},
-      };
-    });
+    ctx.ui.setHeader(header);
   });
 
   pi.registerCommand("yarrow", {
-    description: "Toggle Yarrow header",
+    description: "Toggle the Yarrow header",
     handler: async (_args, ctx) => {
       enabled = !enabled;
-      if (enabled) {
-        ctx.ui.notify("Yarrow header enabled — /reload or restart to see him", "info");
-      } else {
-        ctx.ui.setHeader(undefined);
-        ctx.ui.notify("Yarrow header disabled — built-in header restored", "info");
-      }
-    },
-  });
-
-  pi.registerCommand("builtin-header", {
-    description: "Restore built-in header",
-    handler: async (_args, ctx) => {
-      enabled = false;
-      ctx.ui.setHeader(undefined);
-      ctx.ui.notify("Built-in header restored", "info");
+      ctx.ui.setHeader(enabled ? header : undefined);
+      ctx.ui.notify(
+        enabled ? "Yarrow header enabled" : "Yarrow header disabled — built-in header restored",
+        "info",
+      );
     },
   });
 }

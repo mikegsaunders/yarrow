@@ -1,8 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { resolveApiKey } from "./shared/auth.ts";
 
 interface Credits {
 	total_credits: number;
@@ -23,30 +21,6 @@ async function fetchCredits(apiKey: string, signal?: AbortSignal): Promise<Credi
 	}
 }
 
-function resolveApiKey(): string | undefined {
-	try {
-		const authPath = join(homedir(), ".pi", "agent", "auth.json");
-		const raw = readFileSync(authPath, "utf-8");
-		const auth = JSON.parse(raw) as Record<string, { type: string; key: string }>;
-		const entry = auth["openrouter"];
-		if (!entry || entry.type !== "api_key") return undefined;
-
-		const key = entry.key;
-		if (key.startsWith("!")) {
-			// Shell command - not supported here, skip
-			return undefined;
-		}
-		if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) && process.env[key]) {
-			// Looks like an env var name and exists in env
-			return process.env[key];
-		}
-		// Literal value
-		return key;
-	} catch {
-		return undefined;
-	}
-}
-
 export default function (pi: ExtensionAPI) {
 	let credits: Credits | null = null;
 	let error = false;
@@ -55,7 +29,7 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		if (!ctx.hasUI) return;
 
-		const apiKey = resolveApiKey();
+		const apiKey = resolveApiKey({ env: ["OPENROUTER_API_KEY"], auth: ["openrouter"] });
 		if (!apiKey) return;
 
 		const refresh = async (signal?: AbortSignal) => {

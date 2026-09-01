@@ -6,38 +6,14 @@ import {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,
 } from "@earendil-works/pi-coding-agent";
-import { readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { resolve } from "node:path";
-
-// ───────────────────────────────────────────────
-// Auth loading
-// ───────────────────────────────────────────────
-
-function loadAuthJson(): Record<string, { type: string; key: string }> {
-  try {
-    const paths = [
-      resolve(homedir(), ".pi/agent/auth.json"),
-      resolve(homedir(), ".local/share/pi/auth.json"),
-    ];
-    for (const path of paths) {
-      try {
-        const raw = readFileSync(path, "utf8");
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") return parsed;
-      } catch {
-        continue;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return {};
-}
-
-const AUTH = loadAuthJson();
-const getKey = (name: string): string | undefined =>
-  process.env[name] || AUTH[name]?.key;
+import { resolveApiKey } from "../shared/auth.ts";
+import {
+  currentMonth,
+  getUsage,
+  recordSearch,
+  USAGE_PATH,
+  type UsageState,
+} from "./usage.ts";
 
 // ───────────────────────────────────────────────
 // Types
@@ -67,19 +43,16 @@ interface WebSearchResponse {
   costUsd?: number;
 }
 
-interface UsageState {
-  exaThisMonth: number;
-  braveThisMonth: number;
-  month: string; // YYYY-MM
-}
-
 // ───────────────────────────────────────────────
 // Config & constants
 // ───────────────────────────────────────────────
 
-const EXA_API_KEY = getKey("EXA_API_KEY") || getKey("exa-search");
-const BRAVE_API_KEY = getKey("BRAVE_API_KEY") || getKey("brave-search");
-const OPENROUTER_API_KEY = getKey("OPENROUTER_API_KEY") || getKey("openrouter");
+const EXA_API_KEY = resolveApiKey({ env: ["EXA_API_KEY"], auth: ["exa-search", "exa"] });
+const BRAVE_API_KEY = resolveApiKey({ env: ["BRAVE_API_KEY"], auth: ["brave-search", "brave"] });
+const OPENROUTER_API_KEY = resolveApiKey({
+  env: ["OPENROUTER_API_KEY"],
+  auth: ["openrouter"],
+});
 const OPENROUTER_MODEL =
   process.env.OPENROUTER_SEARCH_MODEL ?? "openai/gpt-4o-mini";
 
@@ -96,39 +69,30 @@ const OPENROUTER_TIMEOUT_MS = 30_000;
 // Mutable process-level state
 // ───────────────────────────────────────────────
 
-let usage: UsageState = {
-  exaThisMonth: 0,
-  braveThisMonth: 0,
-  month: getCurrentMonth(),
-};
-
 let exaPermanentlyFailed = false;
 let bravePermanentlyFailed = false;
 let openRouterPermanentlyFailed = false;
 let lastBraveRequestTime = 0;
 
-function getCurrentMonth(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
-}
+let quotaMonth = currentMonth();
 
-function resetUsageIfNewMonth() {
-  const current = getCurrentMonth();
-  if (usage.month !== current) {
-    usage = { exaThisMonth: 0, braveThisMonth: 0, month: current };
+/** A new month clears "quota exhausted" verdicts along with the counters. */
+function refreshMonthlyState(): UsageState {
+  const usage = getUsage();
+  if (usage.month !== quotaMonth) {
+    quotaMonth = usage.month;
     exaPermanentlyFailed = false;
     bravePermanentlyFailed = false;
   }
+  return usage;
 }
 
 function isExaAvailable(): boolean {
-  resetUsageIfNewMonth();
-  return !!EXA_API_KEY && !exaPermanentlyFailed && usage.exaThisMonth < EXA_SAFETY_MARGIN;
+  return !!EXA_API_KEY && !exaPermanentlyFailed && refreshMonthlyState().exa < EXA_SAFETY_MARGIN;
 }
 
 function isBraveAvailable(): boolean {
-  resetUsageIfNewMonth();
-  return !!BRAVE_API_KEY && !bravePermanentlyFailed && usage.braveThisMonth < BRAVE_SAFETY_MARGIN;
+  return !!BRAVE_API_KEY && !bravePermanentlyFailed && refreshMonthlyState().brave < BRAVE_SAFETY_MARGIN;
 }
 
 function isOpenRouterAvailable(): boolean {
@@ -296,7 +260,7 @@ async function exaSearch(
       publishedDate: r.publishedDate ?? undefined,
     }));
 
-    usage.exaThisMonth++;
+    recordSearch("exa");
 
     return {
       results,
@@ -380,7 +344,7 @@ async function braveSearch(
       };
     });
 
-    usage.braveThisMonth++;
+    recordSearch("brave");
 
     return { results, provider: "brave" };
   } finally {
@@ -612,18 +576,6 @@ async function runSearch(
 // ───────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
-  // Restore usage from persisted session entries
-  pi.on("session_start", async (_event, ctx) => {
-    for (const entry of ctx.sessionManager.getEntries()) {
-      if (entry.type === "custom" && entry.customType === "web-search-usage") {
-        const data = entry.data as UsageState | undefined;
-        if (data && data.month === getCurrentMonth()) {
-          usage = { ...data };
-        }
-      }
-    }
-  });
-
   pi.registerTool({
     name: "web_search",
     label: "Web Search",
@@ -699,9 +651,6 @@ export default function (pi: ExtensionAPI) {
         onUpdate?.({ content: [{ type: "text", text }], details: {} });
       });
 
-      // Persist usage after successful search
-      pi.appendEntry("web-search-usage", { ...usage });
-
       const text = formatResultsAsText(result);
 
       // Truncate to avoid overwhelming context
@@ -732,15 +681,16 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("search-stats", {
     description: "Show web-search provider usage and quota status",
     handler: async (_args, ctx) => {
-      resetUsageIfNewMonth();
+      const usage = refreshMonthlyState();
       const lines: string[] = [];
       lines.push(`Month: ${usage.month}`);
       lines.push("");
-      lines.push(`Exa:      ${usage.exaThisMonth} / ${EXA_FREE_TIER}  ${isExaAvailable() ? "✅ available" : "❌ unavailable"}`);
-      lines.push(`Brave:    ${usage.braveThisMonth} / ${BRAVE_FREE_TIER}  ${isBraveAvailable() ? "✅ available" : "❌ unavailable"}`);
+      lines.push(`Exa:        ${usage.exa} / ${EXA_FREE_TIER}  ${isExaAvailable() ? "✅ available" : "❌ unavailable"}`);
+      lines.push(`Brave:      ${usage.brave} / ${BRAVE_FREE_TIER}  ${isBraveAvailable() ? "✅ available" : "❌ unavailable"}`);
       lines.push(`OpenRouter: ${isOpenRouterAvailable() ? "✅ available" : "❌ unavailable"}  (paid, no quota tracking)`);
       lines.push("");
       lines.push(`Fallback chain: Exa → Brave → OpenRouter`);
+      lines.push(`Counts: ${USAGE_PATH}`);
       if (!EXA_API_KEY && !BRAVE_API_KEY && !OPENROUTER_API_KEY) {
         lines.push("");
         lines.push("⚠️  No API keys configured.");
