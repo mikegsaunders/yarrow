@@ -18,6 +18,7 @@ Installs pi if you don't have it. If you already have pi and want the extensions
 
 ```bash
 yarrow                                    # the TUI
+yarrow update                             # update pi, then Yarrow
 yo remind me of the command for nginx     # one-shot answer, in the terminal
 ```
 
@@ -42,7 +43,7 @@ Defaults: OpenRouter, `kimi-k2.6`, medium thinking, quiet startup. Yarrow **merg
 ## Update, uninstall
 
 ```bash
-pi update --extensions          # or: cd ~/.yarrow && git pull
+yarrow update                   # updates pi, then Yarrow, however you installed it
 ~/.yarrow/install.sh --uninstall
 ```
 

@@ -223,13 +223,42 @@ fi
 LOCAL_BIN="$HOME/.local/bin"
 mkdir -p "$LOCAL_BIN"
 
+# The wrapper is removed and recreated rather than overwritten in place, so that
+# `yarrow update` can regenerate it while bash is still reading the old inode.
 rm -f "$LOCAL_BIN/yarrow"
-cat > "$LOCAL_BIN/yarrow" <<'WRAPPER'
-#!/usr/bin/env bash
+# Baked in at install time: how this machine got Yarrow, and so how it updates.
+printf '#!/usr/bin/env bash\nYARROW_SOURCE=%q\n' "${CHECKOUT_DIR:-$YARROW_PACKAGE}" > "$LOCAL_BIN/yarrow"
+cat >> "$LOCAL_BIN/yarrow" <<'WRAPPER'
 # yarrow — open the harness.
 #
-# A convenience name, not a separate runtime: Yarrow is registered as a global pi
-# package, so `pi` behaves identically. Use `pi -ne` for a session without it.
+#   yarrow          start a session (plain `pi` is identical; `pi -ne` skips Yarrow)
+#   yarrow update   update pi, then Yarrow itself
+#
+# Anything else is handed to pi untouched.
+
+if [ "${1:-}" = "update" ] && [ $# -eq 1 ]; then
+  echo "[yarrow] updating pi ..."
+  pi update || echo "[yarrow] pi update failed, carrying on"
+
+  case "$YARROW_SOURCE" in
+    npm:* | git:*)
+      echo "[yarrow] updating Yarrow from ${YARROW_SOURCE} ..."
+      pi update --extensions
+      if command -v npx >/dev/null 2>&1; then
+        npx -y -p "${YARROW_SOURCE#npm:}" yarrow-config
+      fi
+      ;;
+    *)
+      echo "[yarrow] updating Yarrow from ${YARROW_SOURCE} ..."
+      git -C "$YARROW_SOURCE" pull --ff-only || exit 1
+      # Re-run the installer: it re-registers the package, merges any new config
+      # defaults, and regenerates these wrappers.
+      "$YARROW_SOURCE/install.sh"
+      ;;
+  esac
+  exit 0
+fi
+
 exec pi "$@"
 WRAPPER
 
