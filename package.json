@@ -15,6 +15,7 @@
     "access": "public"
   },
   "type": "module",
+  "packageManager": "pnpm@12.9.1",
   "files": [
     "extensions",
     "!extensions/**/*.test.ts",
