@@ -39,9 +39,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "eval:classifier": "bun extensions/permissions/classifier.eval.ts",
-    "prepublishOnly": "npm install --no-audit --no-fund && npm run typecheck && bun test"
+    "test": "node --test 'extensions/**/*.test.ts'",
+    "eval:classifier": "node extensions/permissions/classifier.eval.ts",
+    "prepublishOnly": "pnpm install --frozen-lockfile && pnpm run typecheck && pnpm test"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
@@ -50,9 +50,11 @@
     "typebox": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.84.4",
-    "@types/bun": "^1.4.0",
+    "@earendil-works/pi-ai": "^1.5.2",
+    "@earendil-works/pi-coding-agent": "^1.5.2",
+    "@earendil-works/pi-tui": "^1.5.2",
     "@types/node": "^22.10.0",
+    "typebox": "^1.3.23",
     "typescript": "^5.7.0"
   }
 }

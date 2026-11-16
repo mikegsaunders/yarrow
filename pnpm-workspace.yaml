@@ -1,0 +1,4 @@
+allowBuilds:
+  # Transitive deps of pi; Yarrow only typechecks against pi, so their install scripts never need to run.
+  "@google/genai": false
+  protobufjs: false

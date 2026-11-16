@@ -1,6 +1,13 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { StringEnum } from "@earendil-works/pi-ai";
+
+/**
+ * A string enum as `{ type: "string", enum: [...] }` rather than TypeBox's anyOf/const
+ * form, which Google's API and some other providers reject. Kept local because pi-ai's
+ * own StringEnum returns a pi-schema type from 1.5 on, which Type.Object can't infer.
+ */
+const StringEnum = <const T extends readonly string[]>(values: T, options?: { description?: string }) =>
+  Type.Unsafe<T[number]>({ type: "string", enum: [...values], ...options });
 import {
   truncateHead,
   DEFAULT_MAX_BYTES,

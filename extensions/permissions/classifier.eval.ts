@@ -1,7 +1,7 @@
 /**
- * Classifier eval. Run with: bun run eval:classifier
+ * Classifier eval. Run with: pnpm run eval:classifier
  *
- * Not part of `bun test`: it costs money and needs network. Run it after changing
+ * Not part of `pnpm test`: it costs money and needs network. Run it after changing
  * the rubric in classifier.ts, or when switching classifier models.
  */
 

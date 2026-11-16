@@ -56,7 +56,7 @@ git clone https://github.com/mikegsaunders/yarrow.git ~/.yarrow && ~/.yarrow/ins
 Installed from a checkout, pi loads the extensions out of your working copy — edit, restart, done.
 
 ```bash
-npm install && npm run typecheck && bun test
+pnpm install && pnpm run typecheck && pnpm test
 ```
 
 Extensions are typechecked against the pi version in `devDependencies`, so API drift shows up in CI rather than at someone's next startup.

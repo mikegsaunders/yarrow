@@ -1,30 +1,32 @@
-import { describe, expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 import { readAuthEntry } from "./auth.ts";
 
 describe("auth.json credentials", () => {
 	test("api_key entries", () => {
-		expect(readAuthEntry({ type: "api_key", key: "sk-literal" })).toBe("sk-literal");
+		assert.equal(readAuthEntry({ type: "api_key", key: "sk-literal" }), "sk-literal");
 	});
 
 	test("an api_key entry naming an environment variable", () => {
 		process.env.YARROW_TEST_KEY = "sk-from-env";
-		expect(readAuthEntry({ type: "api_key", key: "YARROW_TEST_KEY" })).toBe("sk-from-env");
+		assert.equal(readAuthEntry({ type: "api_key", key: "YARROW_TEST_KEY" }), "sk-from-env");
 		delete process.env.YARROW_TEST_KEY;
 	});
 
 	test("oauth entries, which is what /login openrouter writes", () => {
-		expect(
+		assert.equal(
 			readAuthEntry({ type: "oauth", access: "sk-from-oauth", expires: Number.MAX_SAFE_INTEGER }),
-		).toBe("sk-from-oauth");
+			"sk-from-oauth",
+		);
 	});
 
 	test("an expired oauth token is absent, not sent", () => {
-		expect(readAuthEntry({ type: "oauth", access: "stale", expires: Date.now() - 1000 })).toBeUndefined();
+		assert.equal(readAuthEntry({ type: "oauth", access: "stale", expires: Date.now() - 1000 }), undefined);
 	});
 
 	test("unsupported and missing shapes", () => {
-		expect(readAuthEntry({ type: "api_key", key: "!op read op://vault/key" })).toBeUndefined();
-		expect(readAuthEntry({ type: "api_key" })).toBeUndefined();
-		expect(readAuthEntry(undefined)).toBeUndefined();
+		assert.equal(readAuthEntry({ type: "api_key", key: "!op read op://vault/key" }), undefined);
+		assert.equal(readAuthEntry({ type: "api_key" }), undefined);
+		assert.equal(readAuthEntry(undefined), undefined);
 	});
 });

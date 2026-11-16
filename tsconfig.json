@@ -4,7 +4,7 @@
     "lib": ["ES2023", "DOM"],
     "module": "Preserve",
     "moduleResolution": "Bundler",
-    "types": ["node", "bun"],
+    "types": ["node"],
     "strict": true,
     "noUncheckedIndexedAccess": false,
     "noEmit": true,
